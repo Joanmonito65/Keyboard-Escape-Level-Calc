@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>World Speed Calculator</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #111, #222);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+}
+
+.box {
+    width: 100%;
+    max-width: 500px;
+    background: #1c1c1c;
+    padding: 18px;
+    border-radius: 20px;
+    box-shadow: 0 0 25px black;
+    text-align: center;
+}
+
+h1 {
+    margin: 5px;
+    font-size: 30px;
+}
+
+h2 {
+    font-size: 18px;
+    margin: 12px 0 5px;
+}
+
+select,
+input,
+button {
+    width: 100%;
+    font-size: 18px;
+    padding: 12px;
+    margin: 5px 0;
+    border-radius: 12px;
+    border: none;
+}
+
+select,
+input {
+    background: #333;
+    color: white;
+}
+
+button {
+    background: #4CAF50;
+    color: white;
+    font-weight: bold;
+}
+
+button:active {
+    transform: scale(0.97);
+}
+
+.info {
+    background: #292929;
+    border-radius: 12px;
+    padding: 10px;
+    margin: 10px 0;
+    font-size: 15px;
+}
+
+.result {
+    margin-top: 12px;
+    background: #333;
+    padding: 15px;
+    border-radius: 12px;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.section {
+    background: #242424;
+    border-radius: 15px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="box">
+
+<h1>⚡ Speed Calculator</h1>
+
+<select id="world" onchange="updateInfo()">
+    <option value="1">🌎 World 1</option>
+    <option value="2">🌎 World 2</option>
+    <option value="3">🌎 World 3</option>
+</select>
+
+<div class="info" id="info"></div>
+
+
+<div class="section">
+
+<h2>Level ➜ Speed</h2>
+
+<input id="levelInput" type="number" placeholder="Enter Level">
+
+<button onclick="levelToSpeed()">
+Calculate Speed
+</button>
+
+</div>
+
+
+<div class="section">
+
+<h2>Speed ➜ Level</h2>
+
+<input id="speedInput" type="number" placeholder="Enter Speed">
+
+<button onclick="speedToLevel()">
+Calculate Level
+</button>
+
+</div>
+
+
+<div class="result" id="result">
+Result appears here
+</div>
+
+
+</div>
+
+
+<script>
+
+const worlds = {
+
+1:{
+startLevel:1,
+startSpeed:12,
+levelsPerSpeed:1,
+speedGain:2,
+maxSpeed:300,
+maxLevel:145
+},
+
+2:{
+startLevel:120,
+startSpeed:50,
+levelsPerSpeed:2,
+speedGain:1,
+maxSpeed:300,
+maxLevel:620
+},
+
+3:{
+startLevel:400,
+startSpeed:60,
+levelsPerSpeed:5,
+speedGain:1,
+maxSpeed:300,
+maxLevel:1600
+}
+
+};
+
+
+function updateInfo(){
+
+let w = worlds[document.getElementById("world").value];
+
+document.getElementById("info").innerHTML =
+`
+Starting Level: <b>${w.startLevel}</b><br>
+Starting Speed: <b>${w.startSpeed}</b><br>
+Speed Gain: <b>+${w.speedGain} Speed every ${w.levelsPerSpeed} Level(s)</b><br>
+Maximum Speed: <b>${w.maxSpeed}</b><br>
+🏆 Max Speed Level: <b>${w.maxLevel}</b>
+`;
+
+}
+
+
+updateInfo();
+
+
+
+function levelToSpeed(){
+
+let w = worlds[document.getElementById("world").value];
+
+let level = Number(document.getElementById("levelInput").value);
+
+
+if(level < w.startLevel){
+
+document.getElementById("result").innerHTML =
+"Level is too low for this world.";
+
+return;
+
+}
+
+
+let speedIncrease =
+Math.floor((level - w.startLevel) / w.levelsPerSpeed)
+* w.speedGain;
+
+
+let speed =
+w.startSpeed + speedIncrease;
+
+
+if(speed > w.maxSpeed)
+speed = w.maxSpeed;
+
+
+document.getElementById("result").innerHTML =
+`
+Level ${level}<br>
+⚡ Speed ${speed}
+`;
+
+}
+
+
+
+function speedToLevel(){
+
+let w = worlds[document.getElementById("world").value];
+
+let speed = Number(document.getElementById("speedInput").value);
+
+
+if(speed > w.maxSpeed)
+speed = w.maxSpeed;
+
+
+if(speed <= w.startSpeed){
+
+document.getElementById("result").innerHTML =
+`
+Speed ${speed}<br>
+Requires Level ${w.startLevel}
+`;
+
+return;
+
+}
+
+
+let speedNeeded =
+speed - w.startSpeed;
+
+
+let levelsNeeded =
+Math.ceil(speedNeeded / w.speedGain)
+* w.levelsPerSpeed;
+
+
+let level =
+w.startLevel + levelsNeeded;
+
+
+document.getElementById("result").innerHTML =
+`
+Speed ${speed}<br>
+Requires Level ${level}
+`;
+
+}
+
+</script>
+
+</body>
+</html>
