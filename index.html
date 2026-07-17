@@ -3,7 +3,7 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>World Speed Calculator</title>
+<title>World Speed & XP Calculator</title>
 
 <style>
 
@@ -94,6 +94,76 @@ button:active {
     margin-top: 10px;
 }
 
+.caption {
+    font-size: 12px;
+    color: #999;
+    margin: -2px 0 6px;
+    text-align: left;
+}
+
+.divider {
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #3a3a3a;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+    text-align: left;
+}
+
+.toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 12px 0 4px;
+    font-size: 15px;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 26px;
+    flex-shrink: 0;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #444;
+    transition: .2s;
+    border-radius: 26px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .2s;
+    border-radius: 50%;
+}
+
+.switch input:checked + .slider {
+    background-color: #4CAF50;
+}
+
+.switch input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
 </style>
 
 </head>
@@ -102,7 +172,7 @@ button:active {
 
 <div class="box">
 
-<h1>⚡ Speed Calculator</h1>
+<h1>⚡ Speed & XP Calculator</h1>
 
 <select id="world" onchange="updateInfo()">
     <option value="1">🌎 World 1</option>
@@ -112,6 +182,15 @@ button:active {
 
 <div class="info" id="info"></div>
 
+<div class="toggle-row">
+    <label class="switch">
+        <input type="checkbox" id="showFullNumbers" onchange="onToggleChange()">
+        <span class="slider"></span>
+    </label>
+    <span>Show Full Numbers</span>
+</div>
+
+<div class="divider">Speed Conversions</div>
 
 <div class="section">
 
@@ -119,12 +198,11 @@ button:active {
 
 <input id="levelInput" type="number" placeholder="Enter Level">
 
-<button onclick="levelToSpeed()">
+<button onclick="levelToSpeedCalc()">
 Calculate Speed
 </button>
 
 </div>
-
 
 <div class="section">
 
@@ -132,20 +210,70 @@ Calculate Speed
 
 <input id="speedInput" type="number" placeholder="Enter Speed">
 
-<button onclick="speedToLevel()">
+<button onclick="speedToLevelCalc()">
 Calculate Level
 </button>
 
 </div>
 
+<div class="divider">XP Conversions</div>
+
+<div class="section">
+
+<h2>Level ➜ XP</h2>
+<div class="caption">Not affected by World selection</div>
+
+<input id="levelToXpInput" type="number" placeholder="Enter Level">
+
+<button onclick="levelToXPCalc()">
+Calculate XP
+</button>
+
+</div>
+
+<div class="section">
+
+<h2>XP ➜ Level</h2>
+<div class="caption">Not affected by World selection · commas optional</div>
+
+<input id="xpToLevelInput" type="text" inputmode="numeric" pattern="[0-9,]*" maxlength="700" placeholder="Enter XP">
+
+<button onclick="xpToLevelCalc()">
+Calculate Level
+</button>
+
+</div>
+
+<div class="section">
+
+<h2>XP ➜ Speed</h2>
+<div class="caption">Commas optional</div>
+
+<input id="xpToSpeedInput" type="text" inputmode="numeric" pattern="[0-9,]*" maxlength="700" placeholder="Enter XP">
+
+<button onclick="xpToSpeedCalc()">
+Calculate Speed
+</button>
+
+</div>
+
+<div class="section">
+
+<h2>Speed ➜ XP</h2>
+
+<input id="speedToXpInput" type="number" placeholder="Enter Speed">
+
+<button onclick="speedToXPCalc()">
+Calculate XP
+</button>
+
+</div>
 
 <div class="result" id="result">
 Result appears here
 </div>
 
-
 </div>
-
 
 <script>
 
@@ -180,10 +308,13 @@ maxLevel:1600
 
 };
 
+function getWorld(){
+    return worlds[document.getElementById("world").value];
+}
 
 function updateInfo(){
 
-let w = worlds[document.getElementById("world").value];
+let w = getWorld();
 
 document.getElementById("info").innerHTML =
 `
@@ -196,93 +327,299 @@ Maximum Speed: <b>${w.maxSpeed}</b><br>
 
 }
 
-
 updateInfo();
 
+/* ===================== XP SYSTEM ===================== */
+/*
+Level 1 -> 2 needs 100 xp.
+Each next level needs 15% more xp than the previous level-up needed,
+rounded down: increment(n) = floor(increment(n-1) * 1.15)
+Total xp to reach level L = sum of increments for levels 1..L-1
+(Level 3 therefore needs 100 + 115 = 215 total, not 225 - the 15%
+step on 115 is 115*1.15 = 132.25, which only applies to the level 3->4
+jump, so it doesn't change the level-3 total.)
+All XP math uses BigInt so precision holds even at extreme scales.
+*/
 
+const MAX_SUPPORTED_LEVEL = 10000; // safety cap so huge inputs can't freeze the page
 
-function levelToSpeed(){
+function buildXPTable(){
+    const table = new Array(MAX_SUPPORTED_LEVEL + 1);
+    table[1] = 0n;
+    let increment = 100n;
+    for (let L = 2; L <= MAX_SUPPORTED_LEVEL; L++){
+        table[L] = table[L - 1] + increment;
+        increment = (increment * 23n) / 20n; // *1.15, floored (BigInt division truncates toward 0)
+    }
+    return table;
+}
 
-let w = worlds[document.getElementById("world").value];
+const cumulativeXP = buildXPTable();
+
+function levelToXP(level){
+    if (level < 1) level = 1;
+    if (level > MAX_SUPPORTED_LEVEL) level = MAX_SUPPORTED_LEVEL;
+    return cumulativeXP[level];
+}
+
+function xpToLevel(xp){
+    if (xp <= 0n) return 1;
+    if (cumulativeXP[MAX_SUPPORTED_LEVEL] <= xp) return MAX_SUPPORTED_LEVEL;
+    let lo = 1, hi = MAX_SUPPORTED_LEVEL;
+    while (lo < hi){
+        let mid = Math.ceil((lo + hi) / 2);
+        if (cumulativeXP[mid] <= xp) lo = mid;
+        else hi = mid - 1;
+    }
+    return lo;
+}
+
+/* ===================== NUMBER FORMATTING ===================== */
+
+const SCALE_NAMES = [
+    "", "Thousand", "Million", "Billion", "Trillion", "Quadrillion",
+    "Quintillion", "Sextillion", "Septillion", "Octillion", "Nonillion",
+    "Decillion", "Undecillion", "Duodecillion", "Tredecillion", "Quattuordecillion",
+    "Quindecillion", "Sexdecillion", "Septendecillion", "Octodecillion", "Novemdecillion",
+    "Vigintillion", "Unvigintillion", "Duovigintillion", "Tresvigintillion", "Quattuorvigintillion",
+    "Quinvigintillion", "Sesvigintillion", "Septemvigintillion", "Octovigintillion", "Novemvigintillion",
+    "Trigintillion", "Untrigintillion", "Duotrigintillion", "Trestrigintillion", "Quattuortrigintillion",
+    "Quintrigintillion", "Sestrigintillion", "Septentrigintillion", "Octotrigintillion", "Novemtrigintillion",
+    "Quadragintillion"
+];
+
+function formatScientific(n){
+    const digits = n.toString();
+    const exp = digits.length - 1;
+    const mantissa = digits[0] + (digits.length > 1 ? '.' + digits.slice(1, 3) : '');
+    return `${mantissa} \u00d7 10^${exp}`;
+}
+
+function formatXPShort(n){
+    if (n < 1000n) return n.toString();
+    const digits = n.toString();
+    const numDigits = digits.length;
+    const scaleIndex = Math.floor((numDigits - 1) / 3);
+    if (scaleIndex >= SCALE_NAMES.length) return formatScientific(n);
+    const scaleName = SCALE_NAMES[scaleIndex];
+    const intDigits = numDigits - scaleIndex * 3;
+    const wholePart = digits.slice(0, intDigits) || "0";
+    const fracPartFull = digits.slice(intDigits, intDigits + 2);
+    let result = wholePart;
+    const frac = fracPartFull.replace(/0+$/, '');
+    if (frac !== '') result += '.' + frac;
+    return `${result} ${scaleName}`;
+}
+
+function formatXPFull(n){
+    return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+let showFullNumbers = false; // default = short word format, per spec
+
+function formatXP(n){
+    return (showFullNumbers ? formatXPFull(n) : formatXPShort(n)) + " XP";
+}
+
+function onToggleChange(){
+    showFullNumbers = document.getElementById("showFullNumbers").checked;
+    renderResult();
+}
+
+function parseXPInput(elementId){
+    const raw = document.getElementById(elementId).value.trim().replace(/,/g, '');
+    if (!/^\d+$/.test(raw)) return null;
+    return BigInt(raw);
+}
+
+/* ===================== RESULT RENDERING ===================== */
+
+let lastCalculation = null;
+
+function renderResult(){
+    if (!lastCalculation) return;
+    const c = lastCalculation;
+    let html = '';
+    switch (c.type){
+        case 'error':
+            html = c.message;
+            break;
+        case 'levelToSpeed':
+            html = `Level ${c.level}<br>⚡ Speed ${c.speed}`;
+            break;
+        case 'speedToLevel':
+            html = `Speed ${c.speed}<br>Requires Level ${c.level}`;
+            break;
+        case 'levelToXP':
+            html = `Level ${c.level}<br>✨ ${formatXP(c.xp)}`;
+            break;
+        case 'xpToLevel':
+            html = `${formatXP(c.xp)}<br>➜ Level ${c.level}`;
+            break;
+        case 'xpToSpeed':
+            html = `${formatXP(c.xp)}<br>➜ Level ${c.level}<br>⚡ Speed ${c.speed}`;
+            break;
+        case 'speedToXP':
+            html = `Speed ${c.speed}<br>➜ Level ${c.level}<br>✨ ${formatXP(c.xp)}`;
+            break;
+    }
+    document.getElementById('result').innerHTML = html;
+}
+
+/* ===================== SPEED CONVERSIONS (existing logic) ===================== */
+
+function levelToSpeedCalc(){
+
+let w = getWorld();
 
 let level = Number(document.getElementById("levelInput").value);
 
-
-if(level < w.startLevel){
-
-document.getElementById("result").innerHTML =
-"Level is too low for this world.";
-
-return;
-
+if(!Number.isFinite(level) || level < w.startLevel){
+    lastCalculation = {type:'error', message:"Level is too low for this world."};
+    renderResult();
+    return;
 }
-
 
 let speedIncrease =
 Math.floor((level - w.startLevel) / w.levelsPerSpeed)
 * w.speedGain;
 
-
 let speed =
 w.startSpeed + speedIncrease;
 
-
 if(speed > w.maxSpeed)
 speed = w.maxSpeed;
 
-
-document.getElementById("result").innerHTML =
-`
-Level ${level}<br>
-⚡ Speed ${speed}
-`;
+lastCalculation = {type:'levelToSpeed', level, speed};
+renderResult();
 
 }
 
+function speedToLevelCalc(){
 
-
-function speedToLevel(){
-
-let w = worlds[document.getElementById("world").value];
+let w = getWorld();
 
 let speed = Number(document.getElementById("speedInput").value);
 
-
 if(speed > w.maxSpeed)
 speed = w.maxSpeed;
 
-
 if(speed <= w.startSpeed){
-
-document.getElementById("result").innerHTML =
-`
-Speed ${speed}<br>
-Requires Level ${w.startLevel}
-`;
-
-return;
-
+    lastCalculation = {type:'speedToLevel', speed, level:w.startLevel};
+    renderResult();
+    return;
 }
-
 
 let speedNeeded =
 speed - w.startSpeed;
-
 
 let levelsNeeded =
 Math.ceil(speedNeeded / w.speedGain)
 * w.levelsPerSpeed;
 
-
 let level =
 w.startLevel + levelsNeeded;
 
+lastCalculation = {type:'speedToLevel', speed, level};
+renderResult();
 
-document.getElementById("result").innerHTML =
-`
-Speed ${speed}<br>
-Requires Level ${level}
-`;
+}
+
+/* ===================== XP CONVERSIONS (new) ===================== */
+
+function levelToXPCalc(){
+
+let level = Math.floor(Number(document.getElementById("levelToXpInput").value));
+
+if(!Number.isFinite(level) || level < 1){
+    lastCalculation = {type:'error', message:"Please enter a valid level (1 or higher)."};
+    renderResult();
+    return;
+}
+
+if(level > MAX_SUPPORTED_LEVEL){
+    lastCalculation = {type:'error', message:`Level is too high to calculate (max supported: ${MAX_SUPPORTED_LEVEL.toLocaleString()}).`};
+    renderResult();
+    return;
+}
+
+let xp = levelToXP(level);
+lastCalculation = {type:'levelToXP', level, xp};
+renderResult();
+
+}
+
+function xpToLevelCalc(){
+
+let xp = parseXPInput("xpToLevelInput");
+
+if(xp === null){
+    lastCalculation = {type:'error', message:"Please enter a valid whole number for XP."};
+    renderResult();
+    return;
+}
+
+let level = xpToLevel(xp);
+lastCalculation = {type:'xpToLevel', xp, level};
+renderResult();
+
+}
+
+function xpToSpeedCalc(){
+
+let w = getWorld();
+let xp = parseXPInput("xpToSpeedInput");
+
+if(xp === null){
+    lastCalculation = {type:'error', message:"Please enter a valid whole number for XP."};
+    renderResult();
+    return;
+}
+
+let level = xpToLevel(xp);
+
+if(level < w.startLevel){
+    lastCalculation = {type:'error', message:`That XP amount is below Level ${w.startLevel}, the starting level for this world.`};
+    renderResult();
+    return;
+}
+
+let speedIncrease =
+Math.floor((level - w.startLevel) / w.levelsPerSpeed)
+* w.speedGain;
+
+let speed =
+w.startSpeed + speedIncrease;
+
+if(speed > w.maxSpeed)
+speed = w.maxSpeed;
+
+lastCalculation = {type:'xpToSpeed', xp, level, speed};
+renderResult();
+
+}
+
+function speedToXPCalc(){
+
+let w = getWorld();
+let speed = Number(document.getElementById("speedToXpInput").value);
+
+if(speed > w.maxSpeed)
+speed = w.maxSpeed;
+
+let level;
+
+if(speed <= w.startSpeed){
+    level = w.startLevel;
+} else {
+    let speedNeeded = speed - w.startSpeed;
+    let levelsNeeded = Math.ceil(speedNeeded / w.speedGain) * w.levelsPerSpeed;
+    level = w.startLevel + levelsNeeded;
+}
+
+let xp = levelToXP(level);
+lastCalculation = {type:'speedToXP', speed, level, xp};
+renderResult();
 
 }
 
