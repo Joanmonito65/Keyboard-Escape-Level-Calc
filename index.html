@@ -190,84 +190,51 @@ button:active {
     <span>Show Full Numbers</span>
 </div>
 
-<div class="divider">Speed Conversions</div>
+<div class="divider">Conversions</div>
 
 <div class="section">
 
-<h2>Level ➜ Speed</h2>
-
-<input id="levelInput" type="number" placeholder="Enter Level">
-
-<button onclick="levelToSpeedCalc()">
-Calculate Speed
-</button>
-
-</div>
-
-<div class="section">
-
-<h2>Speed ➜ Level</h2>
+<h2>Speed ➜ XP & Level</h2>
 
 <input id="speedInput" type="number" placeholder="Enter Speed">
 
-<button onclick="speedToLevelCalc()">
-Calculate Level
-</button>
-
-</div>
-
-<div class="divider">XP Conversions</div>
-
-<div class="section">
-
-<h2>Level ➜ XP</h2>
-<div class="caption">Not affected by World selection</div>
-
-<input id="levelToXpInput" type="number" placeholder="Enter Level">
-
-<button onclick="levelToXPCalc()">
-Calculate XP
+<button onclick="speedToXPCalc()">
+Calculate
 </button>
 
 </div>
 
 <div class="section">
 
-<h2>XP ➜ Level</h2>
-<div class="caption">Not affected by World selection · commas optional</div>
+<h2>Level ➜ XP & Speed</h2>
 
-<input id="xpToLevelInput" type="text" inputmode="numeric" pattern="[0-9,]*" maxlength="700" placeholder="Enter XP">
+<input id="levelInput" type="number" placeholder="Enter Level">
 
-<button onclick="xpToLevelCalc()">
-Calculate Level
+<button onclick="levelToSpeedXPCalc()">
+Calculate
 </button>
 
 </div>
 
 <div class="section">
 
-<h2>XP ➜ Speed</h2>
+<h2>XP ➜ Speed & Level</h2>
+
 <div class="caption">Commas optional</div>
 
-<input id="xpToSpeedInput" type="text" inputmode="numeric" pattern="[0-9,]*" maxlength="700" placeholder="Enter XP">
+<input id="xpInput" type="text"
+inputmode="numeric"
+pattern="[0-9,]*"
+maxlength="700"
+placeholder="Enter XP">
 
 <button onclick="xpToSpeedCalc()">
-Calculate Speed
+Calculate
 </button>
 
 </div>
 
 <div class="section">
-
-<h2>Speed ➜ XP</h2>
-
-<input id="speedToXpInput" type="number" placeholder="Enter Speed">
-
-<button onclick="speedToXPCalc()">
-Calculate XP
-</button>
-
-</div>
 
 <div class="result" id="result">
 Result appears here
@@ -437,61 +404,99 @@ function parseXPInput(elementId){
 let lastCalculation = null;
 
 function renderResult(){
-    if (!lastCalculation) return;
-    const c = lastCalculation;
+
+    if(!lastCalculation) return;
+
+    let c = lastCalculation;
     let html = '';
-    switch (c.type){
+
+    switch(c.type){
+
         case 'error':
             html = c.message;
             break;
-        case 'levelToSpeed':
-            html = `Level ${c.level}<br>⚡ Speed ${c.speed}`;
+
+        case 'level':
+            html =
+            `Level ${c.level}<br>` +
+            `⚡ Speed ${c.speed}<br>` +
+            `✨ ${formatXP(c.xp)}`;
             break;
-        case 'speedToLevel':
-            html = `Speed ${c.speed}<br>Requires Level ${c.level}`;
+
+        case 'speed':
+            html =
+            `Speed ${c.speed}<br>` +
+            `➜ Level ${c.level}<br>` +
+            `✨ ${formatXP(c.xp)}`;
             break;
-        case 'levelToXP':
-            html = `Level ${c.level}<br>✨ ${formatXP(c.xp)}`;
+
+        case 'xp':
+            html =
+            `${formatXP(c.xp)}<br>` +
+            `➜ Level ${c.level}<br>` +
+            `⚡ Speed ${c.speed}`;
             break;
-        case 'xpToLevel':
-            html = `${formatXP(c.xp)}<br>➜ Level ${c.level}`;
-            break;
-        case 'xpToSpeed':
-            html = `${formatXP(c.xp)}<br>➜ Level ${c.level}<br>⚡ Speed ${c.speed}`;
-            break;
-        case 'speedToXP':
-            html = `Speed ${c.speed}<br>➜ Level ${c.level}<br>✨ ${formatXP(c.xp)}`;
-            break;
+
     }
-    document.getElementById('result').innerHTML = html;
+
+    document.getElementById("result").innerHTML = html;
+
 }
 
 /* ===================== SPEED CONVERSIONS (existing logic) ===================== */
 
-function levelToSpeedCalc(){
+function levelToSpeedXPCalc(){
 
-let w = getWorld();
+    let w = getWorld();
 
-let level = Number(document.getElementById("levelInput").value);
+    let level =
+    Math.floor(Number(document.getElementById("levelInput").value));
 
-if(!Number.isFinite(level) || level < w.startLevel){
-    lastCalculation = {type:'error', message:"Level is too low for this world."};
+    if(!Number.isFinite(level) || level < w.startLevel){
+
+        lastCalculation = {
+            type:'error',
+            message:"Level is too low for this world."
+        };
+
+        renderResult();
+        return;
+
+    }
+
+    if(level > MAX_SUPPORTED_LEVEL){
+
+        lastCalculation = {
+            type:'error',
+            message:`Level is too high (max ${MAX_SUPPORTED_LEVEL}).`
+        };
+
+        renderResult();
+        return;
+
+    }
+
+    let speedIncrease =
+    Math.floor((level - w.startLevel) / w.levelsPerSpeed)
+    * w.speedGain;
+
+    let speed =
+    w.startSpeed + speedIncrease;
+
+    if(speed > w.maxSpeed)
+        speed = w.maxSpeed;
+
+    let xp =
+    levelToXP(level);
+
+    lastCalculation = {
+        type:'level',
+        level,
+        speed,
+        xp
+    };
+
     renderResult();
-    return;
-}
-
-let speedIncrease =
-Math.floor((level - w.startLevel) / w.levelsPerSpeed)
-* w.speedGain;
-
-let speed =
-w.startSpeed + speedIncrease;
-
-if(speed > w.maxSpeed)
-speed = w.maxSpeed;
-
-lastCalculation = {type:'levelToSpeed', level, speed};
-renderResult();
 
 }
 
@@ -567,59 +572,112 @@ renderResult();
 
 function xpToSpeedCalc(){
 
-let w = getWorld();
-let xp = parseXPInput("xpToSpeedInput");
+    let w = getWorld();
 
-if(xp === null){
-    lastCalculation = {type:'error', message:"Please enter a valid whole number for XP."};
+    let xp =
+    parseXPInput("xpInput");
+
+    if(xp === null){
+
+        lastCalculation = {
+            type:'error',
+            message:"Please enter a valid XP amount."
+        };
+
+        renderResult();
+        return;
+
+    }
+
+    let level =
+    xpToLevel(xp);
+
+    if(level < w.startLevel){
+
+        lastCalculation = {
+            type:'error',
+            message:`That XP is below Level ${w.startLevel}.`
+        };
+
+        renderResult();
+        return;
+
+    }
+
+    let speedIncrease =
+    Math.floor((level - w.startLevel) / w.levelsPerSpeed)
+    * w.speedGain;
+
+    let speed =
+    w.startSpeed + speedIncrease;
+
+    if(speed > w.maxSpeed)
+        speed = w.maxSpeed;
+
+    lastCalculation = {
+        type:'xp',
+        xp,
+        level,
+        speed
+    };
+
     renderResult();
-    return;
-}
-
-let level = xpToLevel(xp);
-
-if(level < w.startLevel){
-    lastCalculation = {type:'error', message:`That XP amount is below Level ${w.startLevel}, the starting level for this world.`};
-    renderResult();
-    return;
-}
-
-let speedIncrease =
-Math.floor((level - w.startLevel) / w.levelsPerSpeed)
-* w.speedGain;
-
-let speed =
-w.startSpeed + speedIncrease;
-
-if(speed > w.maxSpeed)
-speed = w.maxSpeed;
-
-lastCalculation = {type:'xpToSpeed', xp, level, speed};
-renderResult();
 
 }
 
 function speedToXPCalc(){
 
-let w = getWorld();
-let speed = Number(document.getElementById("speedToXpInput").value);
+    let w = getWorld();
 
-if(speed > w.maxSpeed)
-speed = w.maxSpeed;
+    let speed =
+    Number(document.getElementById("speedInput").value);
 
-let level;
+    if(!Number.isFinite(speed)){
 
-if(speed <= w.startSpeed){
-    level = w.startLevel;
-} else {
-    let speedNeeded = speed - w.startSpeed;
-    let levelsNeeded = Math.ceil(speedNeeded / w.speedGain) * w.levelsPerSpeed;
-    level = w.startLevel + levelsNeeded;
-}
+        lastCalculation = {
+            type:'error',
+            message:"Please enter a valid speed."
+        };
 
-let xp = levelToXP(level);
-lastCalculation = {type:'speedToXP', speed, level, xp};
-renderResult();
+        renderResult();
+        return;
+
+    }
+
+    if(speed > w.maxSpeed)
+        speed = w.maxSpeed;
+
+    let level;
+
+    if(speed <= w.startSpeed){
+
+        level = w.startLevel;
+
+    }else{
+
+        let speedNeeded =
+        speed - w.startSpeed;
+
+        let levelsNeeded =
+        Math.ceil(speedNeeded / w.speedGain)
+        * w.levelsPerSpeed;
+
+        level =
+        w.startLevel + levelsNeeded;
+
+    }
+
+    let xp =
+    levelToXP(level);
+
+    lastCalculation = {
+        type:'speed',
+        speed,
+        level,
+        xp
+    };
+
+    renderResult();
 
 }
 
