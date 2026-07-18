@@ -341,10 +341,14 @@ function nextSpeedLevel(level, world) {
 function progressData(xp, startXP, targetXP) {
     const span = targetXP - startXP;
     const gained = xp - startXP;
+
     const currentPercent = Number((gained * 10000n) / span) / 100;
+
     return {
         currentPercent,
         neededPercent: 100 - currentPercent,
+        currentXP: gained,
+        requiredXP: span,
         remaining: targetXP - xp,
         target: targetXP
     };
@@ -356,12 +360,15 @@ function progressMarkup(label, data, destination) {
     return `
         <div class="progress-group">
             <div class="progress-label"><span>${label}</span><span>${current} / 100%</span></div>
-            <div class="progress-track"><div class="progress-fill" style="width: ${Math.max(1, data.currentPercent)}%"></div></div>
-            <div class="progress-details">
-                ${needed} more needed to reach ${destination}<br>
-                ${formatXP(data.remaining)} more XP to reach ${destination}<br>
-                ${formatXP(data.target)} total XP to reach ${destination}
-            </div>
+            <div class="progress-track"><div class="progress-fill" style="width: ${Math.max(0, data.currentPercent)}%"></div></div>
+
+<div class="progress-details">
+    ${needed} more needed to reach ${destination}<br>
+    ${formatXP(data.currentXP)} / ${formatXP(data.requiredXP)} to reach ${destination}<br>
+    ${formatXP(data.remaining)} XP left to reach ${destination}<br>
+    ${formatXP(data.target)} total XP to reach ${destination}
+</div>
+
         </div>`;
 }
 
