@@ -465,8 +465,9 @@ function progressMarkup(label, data, destination) {
 <div class="progress-details">
     ${needed} more needed to reach ${destination}<br>
     ${formatXP(data.currentXP)} / ${formatXP(data.requiredXP)} to reach ${destination}<br>
-    ${formatXP(data.remaining)} XP left to reach ${destination}<br>
-    ${formatXP(data.target)} total XP to reach ${destination}
+${formatXP(data.remaining)} left to reach ${destination}<br>
+${formatXP(data.target)} total to reach ${destination}
+
 </div>
 
         </div>`;
@@ -498,6 +499,7 @@ function renderResult() {
     }
 
     if (c.type === 'xp') {
+const unit = getWorld().xpName;
         let html = `<div class="result-title">${formatXP(c.xp)}<br>➜ Level ${c.level}<br>⚡ Speed ${c.speed}</div>`;
         if (c.nextLevel) html += progressMarkup('Progress to next level', c.nextLevel, `Level ${c.level + 1}`);
         else html += '<div class="max-note">Maximum supported level reached.</div>';
