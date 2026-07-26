@@ -187,15 +187,19 @@ const worlds = {
     2: { startLevel: 120, startSpeed: 50, levelsPerSpeed: 2, speedGain: 1, maxSpeed: 300, maxLevel: 620, xpName: "XP" },
     3: { startLevel: 400, startSpeed: 60, levelsPerSpeed: 5, speedGain: 1, maxSpeed: 300, maxLevel: 1600, xpName: "XP" },
 
-    bbnos: {
-        startLevel: 1,
-        startSpeed: 12,
-        levelsPerSpeed: 1,
-        speedGain: 2,
-        maxSpeed: 300,
-        maxLevel: 145,
-        xpName: "Fame"
-    },
+bbnos: {
+    startLevel: 1,
+    startSpeed: 12,
+    levelsPerSpeed: 1,
+    speedGain: 2,
+    maxSpeed: 300,
+    maxLevel: 145,
+    xpName: "Fame",
+
+    eventStart: "2026-07-25T18:00:00Z",
+    eventEnd: "2026-08-01T18:00:00Z",
+    eventName: "Limited-Time World"
+},
 
 old3: {
     startLevel: 510,
@@ -204,7 +208,11 @@ old3: {
     speedGain: 1,
     maxSpeed: 300,
     maxLevel: 1710,
-    xpName: "XP"
+    xpName: "XP",
+
+    oldStart: "2026-06-27T18:00:00Z",
+    oldEnd: "2026-07-04T18:00:00Z",
+    eventName: "Before the Rebalancing Update"
 },
 
 };
@@ -213,14 +221,63 @@ function getWorld() {
     return worlds[document.getElementById('world').value];
 }
 
+function formatLocalDate(dateString) {
+    return new Date(dateString).toLocaleString([], {
+        dateStyle: "long",
+        timeStyle: "short"
+    });
+}
+
+function getExtraWorldInfo(worldKey) {
+
+    if (worldKey === "bbnos") {
+
+        const now = new Date();
+        const start = new Date(worlds.bbnos.eventStart);
+        const end = new Date(worlds.bbnos.eventEnd);
+
+        if (now < end) {
+            return `
+            <br><br>
+            🎤 <b>${worlds.bbnos.eventName}</b><br>
+            Available:<br>
+            ${formatLocalDate(start)} - ${formatLocalDate(end)}
+            `;
+        }
+
+        return `
+        <br><br>
+        ❌ <b>This limited-time world has ended.</b><br>
+        It was available from<br>
+        ${formatLocalDate(start)} - ${formatLocalDate(end)}
+        `;
+    }
+
+    if (worldKey === "old3") {
+
+        return `
+        <br><br>
+        🕰️ <b>Before the Rebalancing Update</b><br>
+        World 3 required Level 510 during this period.<br><br>
+
+        Active from:<br>
+        ${formatLocalDate(worlds.old3.oldStart)} - ${formatLocalDate(worlds.old3.oldEnd)}
+        `;
+    }
+
+    return "";
+}
+
 function updateInfo() {
-    const w = getWorld();
+const worldKey = document.getElementById("world").value;
+const w = worlds[worldKey];
     document.getElementById('info').innerHTML = `
         Starting Level: <b>${w.startLevel}</b><br>
         Starting Speed: <b>${w.startSpeed}</b><br>
         Speed Gain: <b>+${w.speedGain} Speed every ${w.levelsPerSpeed} Level(s)</b><br>
         Maximum Speed: <b>${w.maxSpeed}</b><br>
-        🏆 Max Speed Level: <b>${w.maxLevel}</b>`;
+🏆 Max Speed Level: <b>${w.maxLevel}</b>
+${getExtraWorldInfo(worldKey)}`;
 
 const label = w.xpName;
 
