@@ -141,6 +141,7 @@
         <option value="2">🌎 World 2</option>
 <option value="3">🌎 World 3</option>
 <option value="bbnos">🎤 BBNO$ World</option>
+<option value="old3">🕰️ Old World 3</option>
     </select>
 
     <div class="info" id="info"></div>
@@ -194,7 +195,18 @@ const worlds = {
         maxSpeed: 300,
         maxLevel: 145,
         xpName: "Fame"
-    }
+    },
+
+old3: {
+    startLevel: 510,
+    startSpeed: 60,
+    levelsPerSpeed: 5,
+    speedGain: 1,
+    maxSpeed: 300,
+    maxLevel: 1710,
+    xpName: "XP"
+},
+
 };
 
 function getWorld() {
