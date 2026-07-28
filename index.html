@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>World Speed & XP Calculator</title>
+<title>+1 Speed Keyboard Escape Calc</title>
 <style>
     * { box-sizing: border-box; }
 
@@ -135,7 +135,7 @@
 </head>
 <body>
 <main class="box">
-    <h1>⚡ Speed & XP Calculator</h1>
+    <h1>+1 Speed Keyboard Escape Calc</h1>
 
     <select id="world" onchange="updateInfo()">
         <option value="1">🌎 World 1</option>
@@ -275,7 +275,7 @@ const w = worlds[worldKey];
     document.getElementById('info').innerHTML = `
         Starting Level: <b>${w.startLevel}</b><br>
         Starting Speed: <b>${w.startSpeed}</b><br>
-        Speed Gain: <b>+${w.speedGain} Speed every ${w.levelsPerSpeed} Level(s)</b><br>
+Speed Gain: <b>+${w.speedGain} Speed every ${w.levelsPerSpeed} ${w.levelsPerSpeed === 1 ? "Level" : "Levels"}</b><br>
         Maximum Speed: <b>${w.maxSpeed}</b><br>
 🏆 Max Speed Level: <b>${w.maxLevel}</b>
 ${getExtraWorldInfo(worldKey)}`;
