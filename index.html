@@ -210,7 +210,20 @@
 const worlds = {
     1: { startLevel: 1, startSpeed: 12, levelsPerSpeed: 1, speedGain: 2, maxSpeed: 300, maxLevel: 145, xpName: "XP" },
     2: { startLevel: 120, startSpeed: 50, levelsPerSpeed: 2, speedGain: 1, maxSpeed: 300, maxLevel: 620, xpName: "XP" },
-    3: { startLevel: 400, startSpeed: 60, levelsPerSpeed: 5, speedGain: 1, maxSpeed: 300, maxLevel: 1600, xpName: "XP" },
+
+3: {
+    startLevel: 400,
+    startSpeed: 60,
+    levelsPerSpeed: 5,
+    speedGain: 1,
+    maxSpeed: 300,
+    maxLevel: 1600,
+    xpName: "XP",
+
+    stage15MinLevel: 835,
+    stage15MinSpeed: 147,
+    stage15RecommendedLevel: 850
+},
 
 bbnos: {
     startLevel: 1,
@@ -275,49 +288,74 @@ function getExtraWorldInfo(worldKey) {
         `;
     }
 
-if (worldKey === "old3") {
+    if (worldKey === "old3") {
 
-    return `
-    <br><br>
-🕰️ <b>Old World 3 (Bug)</b><br>
-This was not an official version of the game. It was a bug that affected some players. <br><br>
+        return `
+        <br><br>
+        🕰️ <b>Old World 3 (Bug)</b><br>
+        This was not an official version of the game. It was a bug that affected some players.<br><br>
 
-    Required Level: <b>530</b><br>
-    Level 530 = <b>64 Speed</b><br>
-    Minimum Speed: <b>60</b><br><br>
+        Required Level: <b>530</b><br>
+        Level 530 = <b>64 Speed</b><br>
+        Minimum Speed: <b>60</b><br><br>
 
-    Players could lower their speed to 60 using the custom speed option, even though entering the world normally required Level 530 (64 Speed).
-    `;
-}
+        Players could lower their speed to 60 using the custom speed option,
+        even though entering the world normally required Level 530 (64 Speed).
+        `;
+    }
+
+    if (worldKey === "3") {
+
+        const w = worlds[3];
+
+        return `
+        <br><br>
+        🏁 <b>Stage 15</b><br>
+        Minimum Level: <b>${w.stage15MinLevel}</b><br>
+        Minimum Speed: <b>${w.stage15MinSpeed}</b><br>
+        ⭐ Recommended Level: <b>${w.stage15RecommendedLevel}</b><br>
+        🏆 Beating Stage 15 can unlock <b>Max Speed ${w.maxSpeed}</b>
+        `;
+    }
 
     return "";
 }
 
 function updateInfo() {
-const worldKey = document.getElementById("world").value;
-const w = worlds[worldKey];
+    const worldKey = document.getElementById("world").value;
+    const w = worlds[worldKey];
+
+    let maxSpeedInfo = `🏆 Max Speed Level: <b>${w.maxLevel}</b>`;
+
+    if (worldKey === "3") {
+        maxSpeedInfo = `
+            🏆 Max Speed: <b>${w.maxSpeed}</b><br>
+            📈 Normal Max Speed Level: <b>${w.maxLevel}</b><br>
+            🏁 Stage 15 Max Speed: <b>Beat Stage 15</b>
+        `;
+    }
+
     document.getElementById('info').innerHTML = `
         Starting Level: <b>${w.startLevel}</b><br>
         Starting Speed: <b>${w.startSpeed}</b><br>
-Speed Gain: <b>+${w.speedGain} Speed every ${w.levelsPerSpeed} ${w.levelsPerSpeed === 1 ? "Level" : "Levels"}</b><br>
+        Speed Gain: <b>+${w.speedGain} Speed every ${w.levelsPerSpeed} ${w.levelsPerSpeed === 1 ? "Level" : "Levels"}</b><br>
         Maximum Speed: <b>${w.maxSpeed}</b><br>
-🏆 Max Speed Level: <b>${w.maxLevel}</b>
-${getExtraWorldInfo(worldKey)}`;
+        ${maxSpeedInfo}
+        ${getExtraWorldInfo(worldKey)}`;
 
-const label = w.xpName;
+    const label = w.xpName;
 
-document.querySelectorAll("h2")[0].textContent =
-    `Speed ➜ ${label} & Level`;
+    document.querySelectorAll("h2")[0].textContent =
+        `Speed ➜ ${label} & Level`;
 
-document.querySelectorAll("h2")[1].textContent =
-    `Level ➜ ${label} & Speed`;
+    document.querySelectorAll("h2")[1].textContent =
+        `Level ➜ ${label} & Speed`;
 
-document.querySelectorAll("h2")[2].textContent =
-    `${label} ➜ Speed, Level, & More`;
+    document.querySelectorAll("h2")[2].textContent =
+        `${label} ➜ Speed, Level, & More`;
 
-document.getElementById("xpInput").placeholder =
-    `Enter ${label}`;
-
+    document.getElementById("xpInput").placeholder =
+        `Enter ${label}`;
 }
 
 /* XP required to complete each level grows by 15%, rounded to the nearest XP.
@@ -526,6 +564,7 @@ let lastCalculation = null;
 
 function renderResult() {
     if (!lastCalculation) return;
+
     const result = document.getElementById('result');
     const c = lastCalculation;
 
@@ -535,31 +574,197 @@ function renderResult() {
     }
 
     const historicalNote = c.historical
-        ? `<div class="historical-note">⚠️ This wouldn't have granted entry to Old World 3 in the past — actual entry required Level 530 (Speed 64).</div>`
+        ? `<div class="historical-note">
+            ⚠️ This wouldn't have granted entry to Old World 3 in the past —
+            actual entry required Level 530 (Speed 64).
+           </div>`
         : '';
 
+    /* =========================
+       LEVEL RESULT
+       ========================= */
+
     if (c.type === 'level') {
+
+        let stage15Note = "";
+
+        if (c.world === worlds[3]) {
+
+            if (c.level >= c.world.stage15RecommendedLevel) {
+
+                stage15Note = `
+                    <div class="historical-note">
+                        🏁 ⭐ You're at the recommended level for Stage 15!<br>
+                        Beat Stage 15 to unlock Max Speed ${c.world.maxSpeed}.
+                    </div>`;
+
+            } else if (c.level >= c.world.stage15MinLevel) {
+
+                stage15Note = `
+                    <div class="historical-note">
+                        🏁 You meet the minimum requirement for Stage 15.<br>
+                        ⚡ Minimum Speed: ${c.world.stage15MinSpeed}<br>
+                        ⭐ Recommended Level: ${c.world.stage15RecommendedLevel}
+                    </div>`;
+
+            } else {
+
+                stage15Note = `
+                    <div class="historical-note">
+                        🏁 Stage 15 requires at least Level
+                        ${c.world.stage15MinLevel}
+                        (Speed ${c.world.stage15MinSpeed}).<br>
+                        ⭐ Recommended Level: ${c.world.stage15RecommendedLevel}
+                    </div>`;
+            }
+        }
+
         result.innerHTML = `
-            <div class="result-title">Level ${c.level}<br>⚡ Speed ${c.speed}</div>
+            <div class="result-title">
+                Level ${c.level}<br>
+                ⚡ Speed ${c.speed}
+            </div>
+
             ✨ ${formatXP(c.xp)} to reach Level ${c.level}<br>
             🏁 ${formatXP(c.completeXP)} to finish Level ${c.level}
-            ${historicalNote}`;
+
+            ${stage15Note}
+            ${historicalNote}
+        `;
+
         return;
     }
+
+    /* =========================
+       SPEED RESULT
+       ========================= */
 
     if (c.type === 'speed') {
-        result.innerHTML = `<div class="result-title">Speed ${c.speed}<br>➜ Level ${c.level}<br>✨ ${formatXP(c.xp)}</div>${historicalNote}`;
+
+        let stage15Note = "";
+
+        if (c.world === worlds[3]) {
+
+            if (c.speed >= c.world.stage15MinSpeed) {
+
+                stage15Note = `
+                    <div class="historical-note">
+                        🏁 This speed meets the minimum
+                        Speed ${c.world.stage15MinSpeed}
+                        requirement for Stage 15.<br>
+                        ⭐ Recommended Level:
+                        ${c.world.stage15RecommendedLevel}
+                    </div>`;
+
+            } else {
+
+                stage15Note = `
+                    <div class="historical-note">
+                        🏁 Stage 15 requires Speed
+                        ${c.world.stage15MinSpeed}
+                        or higher.
+                    </div>`;
+            }
+        }
+
+        result.innerHTML = `
+            <div class="result-title">
+                Speed ${c.speed}<br>
+                ➜ Level ${c.level}<br>
+                ✨ ${formatXP(c.xp)}
+            </div>
+
+            ${stage15Note}
+            ${historicalNote}
+        `;
+
         return;
     }
 
-    if (c.type === 'xp') {
-const unit = getWorld().xpName;
-        let html = `<div class="result-title">${formatXP(c.xp)}<br>➜ Level ${c.level}<br>⚡ Speed ${c.speed}</div>${historicalNote}`;
-        if (c.nextLevel) html += progressMarkup('Progress to next level', c.nextLevel, `Level ${c.level + 1}`);
-        else html += '<div class="max-note">Maximum supported level reached.</div>';
+    /* =========================
+       XP RESULT
+       ========================= */
 
-        if (c.nextSpeed) html += progressMarkup('Progress to next speed', c.nextSpeed, `Speed ${c.speed + c.world.speedGain}`);
-        else html += '<div class="max-note">Maximum speed reached for this world.</div>';
+    if (c.type === 'xp') {
+
+        let html = `
+            <div class="result-title">
+                ${formatXP(c.xp)}<br>
+                ➜ Level ${c.level}<br>
+                ⚡ Speed ${c.speed}
+            </div>
+
+            ${historicalNote}
+        `;
+
+        if (c.nextLevel) {
+
+            html += progressMarkup(
+                'Progress to next level',
+                c.nextLevel,
+                `Level ${c.level + 1}`
+            );
+
+        } else {
+
+            html += `
+                <div class="max-note">
+                    Maximum supported level reached.
+                </div>
+            `;
+        }
+
+        if (c.nextSpeed) {
+
+            html += progressMarkup(
+                'Progress to next speed',
+                c.nextSpeed,
+                `Speed ${c.speed + c.world.speedGain}`
+            );
+
+        } else {
+
+            html += `
+                <div class="max-note">
+                    Maximum speed reached for this world.
+                </div>
+            `;
+        }
+
+        /* World 3 Stage 15 information */
+
+        if (c.world === worlds[3]) {
+
+            if (c.level >= c.world.stage15RecommendedLevel) {
+
+                html += `
+                    <div class="historical-note">
+                        🏁 ⭐ Recommended Level for Stage 15 reached!<br>
+                        Beat Stage 15 to unlock Max Speed ${c.world.maxSpeed}.
+                    </div>`;
+
+            } else if (c.level >= c.world.stage15MinLevel) {
+
+                html += `
+                    <div class="historical-note">
+                        🏁 Stage 15 minimum reached!<br>
+                        ⚡ Minimum Speed: ${c.world.stage15MinSpeed}<br>
+                        ⭐ Recommended Level: ${c.world.stage15RecommendedLevel}
+                    </div>`;
+
+            } else {
+
+                html += `
+                    <div class="historical-note">
+                        🏁 Stage 15 requires Level
+                        ${c.world.stage15MinLevel}
+                        (Speed ${c.world.stage15MinSpeed}).<br>
+                        ⭐ Recommended Level:
+                        ${c.world.stage15RecommendedLevel}
+                    </div>`;
+            }
+        }
+
         result.innerHTML = html;
     }
 }
@@ -585,27 +790,54 @@ function clearCalculator() {
 }
 
 function levelToSpeedXPCalc() {
+
     const world = getWorld();
-    const minLevel = (world === worlds.old3) ? world.historicalMinLevel : world.startLevel;
+
+    const minLevel =
+        (world === worlds.old3)
+            ? world.historicalMinLevel
+            : world.startLevel;
 
     const enteredLevel = parseLevelInput();
+
     if (enteredLevel === null) {
-        lastCalculation = { type: 'error', message: 'Please enter a whole-number level.' };
+
+        lastCalculation = {
+            type: 'error',
+            message: 'Please enter a whole-number level.'
+        };
+
     } else if (enteredLevel < BigInt(minLevel)) {
-        lastCalculation = { type: 'error', message: 'Level is too low for this world.' };
+
+        lastCalculation = {
+            type: 'error',
+            message: 'Level is too low for this world.'
+        };
+
     } else if (enteredLevel > BigInt(MAX_SUPPORTED_LEVEL)) {
-        lastCalculation = { type: 'error', message: `Level is too high (max ${MAX_SUPPORTED_LEVEL.toLocaleString()}).` };
+
+        lastCalculation = {
+            type: 'error',
+            message: `Level is too high (max ${MAX_SUPPORTED_LEVEL.toLocaleString()}).`
+        };
+
     } else {
+
         const level = Number(enteredLevel);
+
         lastCalculation = {
             type: 'level',
-            level,
+            level: level,
             speed: speedAtLevel(level, world),
             xp: xpAtLevelStart(level),
             completeXP: levelToXP(level),
-            historical: world === worlds.old3 && level < world.startLevel
+            world: world,
+            historical:
+                world === worlds.old3 &&
+                level < world.startLevel
         };
     }
+
     renderResult();
 }
 
@@ -660,7 +892,15 @@ function speedToXPCalc() {
     speed = Math.min(speed, world.maxSpeed);
     const levelsNeeded = speed <= world.startSpeed ? 0 : Math.ceil((speed - world.startSpeed) / world.speedGain) * world.levelsPerSpeed;
     const level = world.startLevel + levelsNeeded;
-    lastCalculation = { type: 'speed', speed, level, xp: xpAtLevelStart(level) };
+
+lastCalculation = {
+    type: 'speed',
+    speed: speed,
+    level: level,
+    xp: xpAtLevelStart(level),
+    world: world
+};
+
     renderResult();
 }
 
