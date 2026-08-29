@@ -157,13 +157,14 @@
 <main class="box">
     <h1>+1 Speed Keyboard Escape Calc</h1>
 
-    <select id="world" onchange="updateInfo()">
-        <option value="1">🌎 World 1</option>
-        <option value="2">🌎 World 2</option>
-<option value="3">🌎 World 3</option>
-<option value="bbnos">🎤 BBNO$ World</option>
-<option value="old3">🕰️ Old World 3 (Bug)</option>
-    </select>
+<select id="galaxy" onchange="updateGalaxy()">
+    <option value="1">🌌 Galaxy 1</option>
+    <option value="2">🌌 Galaxy 2</option>
+</select>
+
+<select id="world" onchange="updateInfo()">
+    <!-- Worlds are added by JavaScript -->
+</select>
 
     <div class="info" id="info"></div>
 
@@ -208,49 +209,126 @@
 <script>
 
 const worlds = {
-    1: { startLevel: 1, startSpeed: 12, levelsPerSpeed: 1, speedGain: 2, maxSpeed: 300, maxLevel: 145, xpName: "XP" },
-    2: { startLevel: 120, startSpeed: 50, levelsPerSpeed: 2, speedGain: 1, maxSpeed: 300, maxLevel: 620, xpName: "XP" },
 
-3: {
-    startLevel: 400,
-    startSpeed: 60,
-    levelsPerSpeed: 5,
-    speedGain: 1,
-    maxSpeed: 300,
-    maxLevel: 1600,
-    xpName: "XP",
+    // =========================
+    // GALAXY 1
+    // =========================
 
-    stage15MinLevel: 825,
-    stage15MinSpeed: 145,
-    stage15RecommendedLevel: 850
-},
+    1: {
+        galaxy: 1,
+        name: "World 1",
+        startLevel: 1,
+        startSpeed: 12,
+        levelsPerSpeed: 1,
+        speedGain: 2,
+        maxSpeed: 300,
+        maxLevel: 145,
+        xpName: "XP"
+    },
 
-bbnos: {
+    2: {
+        galaxy: 1,
+        name: "World 2",
+        startLevel: 120,
+        startSpeed: 50,
+        levelsPerSpeed: 2,
+        speedGain: 1,
+        maxSpeed: 300,
+        maxLevel: 620,
+        xpName: "XP"
+    },
+
+    3: {
+        galaxy: 1,
+        name: "World 3",
+        startLevel: 400,
+        startSpeed: 60,
+        levelsPerSpeed: 5,
+        speedGain: 1,
+        maxSpeed: 300,
+        maxLevel: 1600,
+        xpName: "XP",
+
+        stage15MinLevel: 825,
+        stage15MinSpeed: 145,
+        stage15RecommendedLevel: 850
+    },
+
+    bbnos: {
+        galaxy: 1,
+        name: "BBNO$ World",
+        startLevel: 1,
+        startSpeed: 12,
+        levelsPerSpeed: 1,
+        speedGain: 2,
+        maxSpeed: 300,
+        maxLevel: 145,
+        xpName: "Fame",
+
+        eventStart: "2026-07-25T15:00:00Z",
+        eventEnd: "2026-08-01T18:00:00Z",
+        eventName: "Limited-Time World"
+    },
+
+    old3: {
+        galaxy: 1,
+        name: "Old World 3 (Bug)",
+        startLevel: 530,
+        startSpeed: 60,
+        levelsPerSpeed: 5,
+        speedGain: 1,
+        maxSpeed: 300,
+        maxLevel: 1710,
+        xpName: "XP",
+        historicalMinLevel: 510
+    },
+
+
+    // =========================
+    // GALAXY 2
+    // =========================
+
+galaxy2world1: {
+    galaxy: 2,
+    name: "World 1",
     startLevel: 1,
     startSpeed: 12,
     levelsPerSpeed: 1,
     speedGain: 2,
     maxSpeed: 300,
     maxLevel: 145,
-    xpName: "Fame",
-
-    eventStart: "2026-07-25T15:00:00Z",
-    eventEnd: "2026-08-01T18:00:00Z",
-    eventName: "Limited-Time World"
-},
-
-old3: {
-    startLevel: 530,
-    startSpeed: 60,
-    levelsPerSpeed: 5,
-    speedGain: 1,
-    maxSpeed: 300,
-    maxLevel: 1710,
     xpName: "XP",
-    historicalMinLevel: 510
-},
+
+    noEntryRequirement: true
+}
 
 };
+
+function updateGalaxy() {
+    const galaxy = document.getElementById("galaxy").value;
+    const worldSelect = document.getElementById("world");
+
+    worldSelect.innerHTML = "";
+
+    if (galaxy === "1") {
+
+        worldSelect.innerHTML = `
+            <option value="1">🌎 World 1</option>
+            <option value="2">🌎 World 2</option>
+            <option value="3">🌎 World 3</option>
+            <option value="bbnos">🎤 BBNO$ World</option>
+            <option value="old3">🕰️ Old World 3 (Bug)</option>
+        `;
+
+    } else if (galaxy === "2") {
+
+        worldSelect.innerHTML = `
+            <option value="galaxy2world1">🌎 World 1</option>
+        `;
+    }
+
+    updateInfo();
+}
 
 function getWorld() {
     return worlds[document.getElementById('world').value];
@@ -335,7 +413,16 @@ function updateInfo() {
         `;
     }
 
+    let entryInfo = "";
+
+    if (w.noEntryRequirement) {
+        entryInfo = `🚪 Entry Requirement: <b>None — Everyone Can Enter</b><br>`;
+    } else {
+        entryInfo = `🔓 Required Level: <b>${w.startLevel}</b><br>`;
+    }
+
     document.getElementById('info').innerHTML = `
+        ${entryInfo}
         Starting Level: <b>${w.startLevel}</b><br>
         Starting Speed: <b>${w.startSpeed}</b><br>
         Speed Gain: <b>+${w.speedGain} Speed every ${w.levelsPerSpeed} ${w.levelsPerSpeed === 1 ? "Level" : "Levels"}</b><br>
@@ -953,7 +1040,8 @@ document.querySelectorAll("input").forEach(input => {
 
 document.getElementById("showFullNumbers").checked = showFullNumbers;
 
-updateInfo();
+updateGalaxy();
+
 </script>
 </body>
 </html>
